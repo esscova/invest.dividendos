@@ -1,10 +1,13 @@
 from http import HTTPStatus
+from typing import List
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
+from sqlalchemy import select
 
 from core.deps import get_session
 from core.auth import get_current_user
-from db.schemas import BaseTransaction
+from db.schemas import BaseTransaction, ResponseTransaction
 from db.models import User, Transaction
 
 #...
@@ -43,5 +46,18 @@ def up_transaction(
         return db_transaction
     
     except:
-        session.rollback()
         print('nao foi')
+        session.rollback()
+
+@router.get('/',
+            status_code=HTTPStatus.CREATED,
+            response_model=List[ResponseTransaction],
+            summary='Lista de transações',
+            description='Esta rota retorna uma lista de transações de um usuário logado.'
+            )
+def get_transactions(
+    session:Session = Depends(get_session),
+):
+    transactions_db = session.scalars(select(Transaction)).all()
+
+    return transactions_db
