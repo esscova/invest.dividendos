@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr, ConfigDict
 from datetime import datetime, date
+from enum import Enum
 
 class UserSchema(BaseModel):
     username:str
@@ -45,3 +46,18 @@ class ResponseDividend(BaseModel):
     Data_Pgto: date
     Tipo: str
     Valor: float
+
+from db.models import TransactionType
+
+class BaseTransaction(BaseModel):
+    ativo:str 
+    quantidade:int 
+    preco:float
+    transaction:TransactionType
+        
+    model_config = ConfigDict(from_attributes=True)
+
+class ResponseTransaction(BaseTransaction):
+    id:int
+    created_at:datetime
+    model_config = ConfigDict(from_attributes=True)

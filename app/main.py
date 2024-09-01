@@ -1,7 +1,10 @@
 from fastapi import FastAPI
-from routes.user_routes import router as users_router
-from routes.transaction_routes import router as transactions_router
-from routes.auth import router as auth_router
+
+
+from routes.auth_routes import router as auth_router
+from routes.agenda_routes import router as agenda_router
+from routes.user_routes import router as user_router
+from routes.transaction_routes import router as transaction_router
 
 
 app = FastAPI(title='Agenda de dividendos',version="0.0.1", openapi_url='/agenda_dividendos')
@@ -14,8 +17,9 @@ def home():
     return{'ping':'pong'}
 
 app.include_router(auth_router)
-app.include_router(transactions_router)
-app.include_router(users_router)
+app.include_router(agenda_router)
+app.include_router(user_router)
+app.include_router(transaction_router)
 
 
 if __name__ == "__main__":
