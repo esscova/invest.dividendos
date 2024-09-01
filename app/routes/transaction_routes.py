@@ -1,7 +1,8 @@
 from http import HTTPStatus
 from typing import List
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.exceptions import ResponseValidationError
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
@@ -10,27 +11,26 @@ from core.auth import get_current_user
 from db.schemas import BaseTransaction, ResponseTransaction
 from db.models import User, Transaction
 
-#...
+# ...
 
-router = APIRouter(
-    prefix='/transactions',
-    tags=['transactions']
-    )
+router = APIRouter(prefix="/transactions", tags=["transactions"])
 
-#...
+# ...
 
-@router.post('/',
-             response_model=BaseTransaction,
-             status_code=HTTPStatus.CREATED,
-             summary='Registro de transações',
-             description='Esta rota registra as movimentações de compra e venda de ativos.'
-             )
-def up_transaction(
-    transaction:BaseTransaction,
-    session:Session = Depends(get_session),
-    user:User = Depends(get_current_user),
-    ):
-    
+
+@router.post(
+    "/",
+    response_model=BaseTransaction,
+    status_code=HTTPStatus.CREATED,
+    summary="Registro de transações",
+    description="Esta rota registra as movimentações de compra e venda de ativos.",
+)
+def create_transaction(
+    transaction: BaseTransaction,
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
+
     db_transaction = Transaction(
         user_id=user.id,
         ativo=transaction.ativo,
@@ -44,20 +44,50 @@ def up_transaction(
         session.commit()
         session.refresh(db_transaction)
         return db_transaction
-    
+
     except:
-        print('nao foi')
+        print("nao foi")
         session.rollback()
 
-@router.get('/',
-            status_code=HTTPStatus.CREATED,
-            response_model=List[ResponseTransaction],
-            summary='Lista de transações',
-            description='Esta rota retorna uma lista de transações de um usuário logado.'
-            )
+
+@router.get(
+    "/",
+    status_code=HTTPStatus.CREATED,
+    response_model=List[ResponseTransaction],
+    summary="Lista de transações",
+    description="Esta rota retorna uma lista de transações de um usuário logado.",
+)
 def get_transactions(
-    session:Session = Depends(get_session),
+    session: Session = Depends(get_session), user: User = Depends(get_current_user)
 ):
     transactions_db = session.scalars(select(Transaction)).all()
 
     return transactions_db
+
+
+@router.get("/{ticker}", status_code=HTTPStatus.OK, response_model=List[ResponseTransaction])
+def get_transaction(
+    ticker: str,
+    user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+
+    try:
+        transactions = session.scalars(
+            select(Transaction).where(
+                Transaction.ativo == ticker, Transaction.user_id == user.id
+            )
+        ).all()
+
+        if not transactions:
+            raise HTTPException(
+                status_code=HTTPStatus.NOT_FOUND,
+                detail=f"Não foram encontradas transações para o ticker: {ticker}",
+            )
+        return transactions
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail=f"Ocorreu um erro ao tentar buscar informações: {str(e)}",
+        )
