@@ -20,8 +20,8 @@ UserServices = Annotated[UserService, Depends(user_service)]
 @router.post('/', 
              status_code=HTTPStatus.CREATED, 
              response_model=Token,
-             summary='Login for access Token',
-             description='Use your email as "username" and your password to obtain an access token.'
+             summary='Acesso ao Token JWT',
+             description='Use seu email como "username" e sua senha para ter acesso ao Token de autenticação JWT.'
              )
 def login_for_access_token(
     form_data:OAuth2Form, 

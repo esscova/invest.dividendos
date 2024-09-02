@@ -2,7 +2,6 @@ from http import HTTPStatus
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.exceptions import ResponseValidationError
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 

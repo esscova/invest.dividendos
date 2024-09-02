@@ -1,61 +1,94 @@
-from http import HTTPStatus
-from typing import List, Dict, Optional
-from fastapi import HTTPException
+from typing import List
 
-from scrap.coletor import coletar_dados
-from core.settings import settings
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
-class DividendService:
-    def __init__(self):
-        self.header = settings.HEADER
+from db.models import Transaction
+from db.schemas import BaseTransaction, ResponseTransaction
 
-    async def _fetch(self, ano:int, mes:int, tipo:int) -> Optional[List[Dict[str,str]]]:
-        """metodo privado para coletar dados de dividendos"""
-        try:
-            data = await coletar_dados(self.header, ano, mes, tipo)
-            
-            if not data:
-                return None
-            
-            return data
+#...
+
+class TransactionService:
+    def __init__(self, session:Session) -> Session:
+        self.session = session
+
+    def create_transaction(
+            self,
+            transaction:BaseTransaction,
+            user_id:int
+        ) -> Transaction:
         
-        except Exception as e:
-            print(f'Erro em coletar dados: {e}')
-            raise HTTPException(
-                status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-                detail='Erro coletando dados de dividendos'
-            )
- 
-    async def get_dividends(self, ano:int, mes:int, tipo:int) -> List[Dict[str,str]]:
-        """Este método coleta e retorna dividendos para um ano e mês específico"""
-        
-        data = await self._fetch(ano, mes, tipo)
+        db_transaction = Transaction(
+            user_id=user_id,
+            ativo=transaction.ativo,
+            quantidade=transaction.quantidade,
+            preco=transaction.preco,
+            transaction=transaction.transaction,
+        )
 
-        if data is None:
-            raise HTTPException(
-                status_code=HTTPStatus.NOT_FOUND,
-                detail=f'Não foram encontrados dados para {mes}/{ano}'
-            )
-        
-        return data
+        self.session.add(db_transaction)
+        self.session.commit()
+        self.session.refresh(db_transaction)
 
-    async def get_dividends_by_ticker(self, tipo: int, ticker: str, ano: int, mes: int ) -> List[Dict[str, str]]:
-        """Este método coleta e retorna dividendos para um ano e mês de um ativo específico pelo ticker"""
+        return db_transaction
+    
+    def get_transactions(
+            self,
+            user_id:int
+    ) -> List[Transaction]:
         
-        data = await self._fetch(ano, mes, tipo)
+        return self.session.scalars(
+            select(Transaction).where(Transaction.user_id == user_id)
+        ).all()
+    
+    def get_transaction_by_id(
+            self,
+            transaction_id:int,
+            user_id:int
+    ) -> Transaction:
+        
+        return self.session.scalar(
+            select(Transaction).where(Transaction.id == transaction_id, Transaction.user_id == user_id)
+        )
 
-        if data is None:
-            raise HTTPException(
-                status_code=HTTPStatus.NOT_FOUND,
-                detail=f'Não foram encontrados dados para {mes}/{ano}'
-            )
+    def get_transaction_by_ticker(
+            self,
+            ticker:str,
+            user_id:int
+    ) -> List[Transaction]:
         
-        result = [x for x in data if x['Ticker'].upper() == ticker.upper()]
+        return self.session.scalars(
+            select(Transaction).where(Transaction.ativo == ticker, Transaction.user_id == user_id)
+        ).all()
+    
+    def update_transaction(
+            self,
+            transaction_id:int,
+            transaction:BaseTransaction,
+            user_id:int,
+    ) -> Transaction:
+        
+        transaction_db = self.get_transaction_by_id(transaction_id,user_id)        
 
-        if not result:
-            raise HTTPException(
-                status_code=HTTPStatus.NOT_FOUND,
-                detail=f'No dividends found for ticker: {ticker}'
-            )
+        if transaction_db:
+            transaction_db.ativo = transaction.ativo
+            transaction_db.transaction = transaction.transaction
+            transaction_db.quantidade = transaction.quantidade
+            transaction_db.preco = transaction.preco
+
+            self.session.commit()
+            self.session.refresh(transaction_db)
         
-        return result
+        return transaction_db
+    
+    def delete_transaction(
+            self,
+            transaction_id:int,
+            user_id:int
+    ) -> None:
+        
+        transaction_db = self.get_transaction_by_id(transaction_id, user_id)
+
+        if transaction_db:
+            self.session.delete(transaction_db)
+            self.session.commit()

@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Annotated
 
 from db.schemas import DividendsSchema, ResponseDividend
-from services.transactions_services import DividendService
+from services.dividends_services import DividendService
 
 #...
 router = APIRouter(prefix='/agenda', tags=['dividends'])
