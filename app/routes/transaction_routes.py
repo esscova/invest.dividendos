@@ -1,5 +1,5 @@
 from http import HTTPStatus
-from typing import List
+from typing import List, Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -10,10 +10,12 @@ from core.auth import get_current_user
 from db.schemas import BaseTransaction, ResponseTransaction
 from db.models import User, Transaction
 from services.transactions_services import TransactionService
-
 # ...
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
+
+CurrentUser = Annotated[User, Depends(get_current_user)]
+ServiceTransaction = Annotated[TransactionService, Depends(get_transaction_service)]
 
 # ...
 
@@ -27,8 +29,8 @@ router = APIRouter(prefix="/transactions", tags=["transactions"])
 )
 def create_transaction(
     transaction: BaseTransaction,
-    user: User = Depends(get_current_user),
-    service: TransactionService = Depends(get_transaction_service),
+    user: CurrentUser,
+    service: ServiceTransaction,
 ):
     try:
         db_transaction = service.create_transaction(transaction, user.id)
@@ -49,28 +51,26 @@ def create_transaction(
     description="Esta rota retorna uma lista de transações de um usuário logado.",
 )
 def get_transactions(
-    session: Session = Depends(get_session), user: User = Depends(get_current_user)
-):
-    transactions_db = session.scalars(select(Transaction)).all()
+    user:CurrentUser,
+    service:ServiceTransaction
+    ):
 
-    return transactions_db
+    return service.get_transactions(user.id)
 
 
 @router.get(
-    "/{ticker}", status_code=HTTPStatus.OK, response_model=List[ResponseTransaction]
+    "/{ticker}", 
+    status_code=HTTPStatus.OK, 
+    response_model=List[ResponseTransaction]
 )
 def get_transaction(
     ticker: str,
-    user: User = Depends(get_current_user),
-    session: Session = Depends(get_session),
+    user: CurrentUser,
+    service:ServiceTransaction,
 ):
 
     try:
-        transactions = session.scalars(
-            select(Transaction).where(
-                Transaction.ativo == ticker, Transaction.user_id == user.id
-            )
-        ).all()
+        transactions = service.get_transaction_by_ticker(ticker, user.id)
 
         if not transactions:
             raise HTTPException(
