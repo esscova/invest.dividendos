@@ -5,12 +5,14 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.exc import IntegrityError
 
 from core.auth import get_current_user
-from db.schemas import Message, UserPublic, UserSchema, UserInfos
-from services.user_services import UserService
-from db.models import User
 from core.deps import user_service
+from db.schemas import Message, UserPublic, UserSchema, UserInfos
+from db.models import User
+from services.user_services import UserService
+
 #...
 router = APIRouter(prefix='/users',tags=['users'])
+
 CurrentUser = Annotated[User, Depends(get_current_user)]
 services = Annotated[UserService, Depends(user_service)]
 #...
