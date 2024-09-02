@@ -90,25 +90,25 @@ def get_transaction(
 def update_transaction(
     transaction_id: int,
     transaction: Transaction,
-    user: User = Depends(get_current_user),
-    session: Session = Depends(get_session),
+    user: CurrentUser,
+    service:ServiceTransaction
 ):
-    transaction_db = session.scalar(
-        select(Transaction).where(
-            Transaction.id == transaction_id, Transaction.user_id == user.id
+    try:
+        transaction_db = service.update_transaction(transaction_id, transaction, user.id)
+
+        if not transaction_db:
+            raise HTTPException(
+                status_code=HTTPStatus.NOT_FOUND,
+                detail='Registro não encontrado'
+            )
+
+        return transaction_db
+    
+    except Exception as e:
+        raise HTTPException(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail=f'Erro ao tentar atualizar registro: {e}'
         )
-    )
-
-    if transaction_db:
-        transaction_db.ativo = transaction.ativo
-        transaction_db.transaction = transaction.transaction
-        transaction_db.quantidade = transaction.quantidade
-        transaction_db.preco = transaction.preco
-
-    session.commit()
-    session.refresh(transaction_db)
-
-    return transaction_db
 
 
 @router.delete("/{transaction_id}")
