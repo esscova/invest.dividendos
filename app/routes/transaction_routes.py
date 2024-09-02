@@ -113,3 +113,19 @@ def update_transaction(
         session.refresh(transaction_db)
 
         return transaction_db
+
+@router.delete('/{transaction_id}')
+def delete_transaction(
+    transaction_id:int,
+    user:User = Depends(get_current_user),
+    session:Session = Depends(get_session)
+):
+    transaction_db = session.scalar(
+        select(Transaction).where(Transaction.id == transaction_id, Transaction.user_id == user.id)
+    )
+
+    if transaction_db:
+        session.delete(transaction_db)
+        session.commit()
+    
+    return {'message':'Registro deletado com sucesso'}
