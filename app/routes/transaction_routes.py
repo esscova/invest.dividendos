@@ -91,3 +91,25 @@ def get_transaction(
             status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
             detail=f"Ocorreu um erro ao tentar buscar informações: {str(e)}",
         )
+
+@router.put('/{transaction_id}', response_model=ResponseTransaction)
+def update_transaction(
+    transaction_id:int,
+    transaction:Transaction,
+    user:User = Depends(get_current_user),
+    session:Session = Depends(get_session),
+    ):
+        transaction_db = session.scalar(
+            select(Transaction).where(Transaction.id == transaction_id, Transaction.user_id == user.id)
+        )
+
+        if transaction_db:
+            transaction_db.ativo = transaction.ativo
+            transaction_db.transaction = transaction.transaction
+            transaction_db.quantidade = transaction.quantidade
+            transaction_db.preco = transaction.preco
+
+        session.commit()
+        session.refresh(transaction_db)
+
+        return transaction_db
