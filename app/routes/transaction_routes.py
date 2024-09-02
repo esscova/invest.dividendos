@@ -5,10 +5,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
-from core.deps import get_session
+from core.deps import get_session, get_transaction_service
 from core.auth import get_current_user
 from db.schemas import BaseTransaction, ResponseTransaction
 from db.models import User, Transaction
+from services.transactions_services import TransactionService
 
 # ...
 
@@ -26,27 +27,18 @@ router = APIRouter(prefix="/transactions", tags=["transactions"])
 )
 def create_transaction(
     transaction: BaseTransaction,
-    session: Session = Depends(get_session),
     user: User = Depends(get_current_user),
+    service: TransactionService = Depends(get_transaction_service),
 ):
-
-    db_transaction = Transaction(
-        user_id=user.id,
-        ativo=transaction.ativo,
-        quantidade=transaction.quantidade,
-        preco=transaction.preco,
-        transaction=transaction.transaction,
-    )
-
     try:
-        session.add(db_transaction)
-        session.commit()
-        session.refresh(db_transaction)
+        db_transaction = service.create_transaction(transaction, user.id)
         return db_transaction
 
-    except:
-        print("nao foi")
-        session.rollback()
+    except Exception as e:
+        raise HTTPException(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail=f"Erro ao tentar criar registro{e}",
+        )
 
 
 @router.get(
@@ -64,7 +56,9 @@ def get_transactions(
     return transactions_db
 
 
-@router.get("/{ticker}", status_code=HTTPStatus.OK, response_model=List[ResponseTransaction])
+@router.get(
+    "/{ticker}", status_code=HTTPStatus.OK, response_model=List[ResponseTransaction]
+)
 def get_transaction(
     ticker: str,
     user: User = Depends(get_current_user),
@@ -91,40 +85,46 @@ def get_transaction(
             detail=f"Ocorreu um erro ao tentar buscar informações: {str(e)}",
         )
 
-@router.put('/{transaction_id}', response_model=ResponseTransaction)
+
+@router.put("/{transaction_id}", response_model=ResponseTransaction)
 def update_transaction(
-    transaction_id:int,
-    transaction:Transaction,
-    user:User = Depends(get_current_user),
-    session:Session = Depends(get_session),
-    ):
-        transaction_db = session.scalar(
-            select(Transaction).where(Transaction.id == transaction_id, Transaction.user_id == user.id)
-        )
-
-        if transaction_db:
-            transaction_db.ativo = transaction.ativo
-            transaction_db.transaction = transaction.transaction
-            transaction_db.quantidade = transaction.quantidade
-            transaction_db.preco = transaction.preco
-
-        session.commit()
-        session.refresh(transaction_db)
-
-        return transaction_db
-
-@router.delete('/{transaction_id}')
-def delete_transaction(
-    transaction_id:int,
-    user:User = Depends(get_current_user),
-    session:Session = Depends(get_session)
+    transaction_id: int,
+    transaction: Transaction,
+    user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
 ):
     transaction_db = session.scalar(
-        select(Transaction).where(Transaction.id == transaction_id, Transaction.user_id == user.id)
+        select(Transaction).where(
+            Transaction.id == transaction_id, Transaction.user_id == user.id
+        )
+    )
+
+    if transaction_db:
+        transaction_db.ativo = transaction.ativo
+        transaction_db.transaction = transaction.transaction
+        transaction_db.quantidade = transaction.quantidade
+        transaction_db.preco = transaction.preco
+
+    session.commit()
+    session.refresh(transaction_db)
+
+    return transaction_db
+
+
+@router.delete("/{transaction_id}")
+def delete_transaction(
+    transaction_id: int,
+    user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    transaction_db = session.scalar(
+        select(Transaction).where(
+            Transaction.id == transaction_id, Transaction.user_id == user.id
+        )
     )
 
     if transaction_db:
         session.delete(transaction_db)
         session.commit()
-    
-    return {'message':'Registro deletado com sucesso'}
+
+    return {"message": "Registro deletado com sucesso"}
