@@ -38,8 +38,8 @@ def create_transaction(
 
     except Exception as e:
         raise HTTPException(
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-            detail=f"Erro ao tentar criar registro{e}",
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail=str(e)
         )
 
 
@@ -54,9 +54,13 @@ def get_transactions(
     user:CurrentUser,
     service:ServiceTransaction
     ):
-
-    return service.get_transactions(user.id)
-
+    try:
+        return service.get_transactions(user.id)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
 @router.get(
     "/{ticker}", 
@@ -79,10 +83,10 @@ def get_transaction(
             )
         return transactions
 
-    except Exception as e:
+    except ValueError as e:
         raise HTTPException(
             status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-            detail=f"Ocorreu um erro ao tentar buscar informações: {str(e)}",
+            detail=str(e),
         )
 
 
@@ -104,27 +108,25 @@ def update_transaction(
 
         return transaction_db
     
-    except Exception as e:
+    except ValueError as e:
         raise HTTPException(
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-            detail=f'Erro ao tentar atualizar registro: {e}'
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail=str(e)
         )
 
 
 @router.delete("/{transaction_id}")
 def delete_transaction(
     transaction_id: int,
-    user: User = Depends(get_current_user),
-    session: Session = Depends(get_session),
+    user: CurrentUser,
+    service:ServiceTransaction,
 ):
-    transaction_db = session.scalar(
-        select(Transaction).where(
-            Transaction.id == transaction_id, Transaction.user_id == user.id
+    try:
+        service.delete_transaction(transaction_id,user.id)
+        return {'message':'Registro deletado com sucesso'}
+    
+    except ValueError as e:
+        raise HTTPException(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail=str(e)
         )
-    )
-
-    if transaction_db:
-        session.delete(transaction_db)
-        session.commit()
-
-    return {"message": "Registro deletado com sucesso"}
