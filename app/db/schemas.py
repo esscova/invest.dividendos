@@ -50,14 +50,16 @@ class ResponseDividend(BaseModel):
 from db.models import TransactionType
 
 class BaseTransaction(BaseModel):
-    ativo:str 
+    data:date    
+    tipo:TransactionType
+    ticker:str 
     quantidade:int 
-    preco:float
-    transaction:TransactionType
-        
+    preco_unitario:float
+    
     model_config = ConfigDict(from_attributes=True)
 
 class ResponseTransaction(BaseTransaction):
     id:int
     created_at:datetime
+    updated_at:datetime
     model_config = ConfigDict(from_attributes=True)

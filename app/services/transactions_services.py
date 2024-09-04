@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 
 from db.models import Transaction
-from db.schemas import BaseTransaction, ResponseTransaction
+from db.schemas import BaseTransaction
 
 #...
 
@@ -21,10 +21,11 @@ class TransactionService:
         try:
             db_transaction = Transaction(
                 user_id=user_id,
-                ativo=transaction.ativo,
+                ticker=transaction.ticker,
                 quantidade=transaction.quantidade,
-                preco=transaction.preco,
-                transaction=transaction.transaction,
+                preco_unitario=transaction.preco_unitario,
+                tipo=transaction.tipo,
+                data=transaction.data
             )
 
             self.session.add(db_transaction)
@@ -84,10 +85,11 @@ class TransactionService:
             transaction_db = self.get_transaction_by_id(transaction_id,user_id)        
 
             if transaction_db:
-                transaction_db.ativo = transaction.ativo
-                transaction_db.transaction = transaction.transaction
+                transaction_db.ticker = transaction.ticker
+                transaction_db.tipo = transaction.tipo
                 transaction_db.quantidade = transaction.quantidade
-                transaction_db.preco = transaction.preco
+                transaction_db.preco_unitario = transaction.preco_unitario
+                transaction_db.data = transaction.data
 
                 self.session.commit()
                 self.session.refresh(transaction_db)

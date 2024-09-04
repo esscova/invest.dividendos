@@ -20,11 +20,12 @@ services = Annotated[UserService, Depends(user_service)]
 @router.post('/',
             status_code=HTTPStatus.CREATED,
             response_model=UserPublic,
-            summary='Registrar usuario',
-            description='Rota para criar usarios, escolha seu username, email e uma senha.'
+            summary='Cadastrar novo usuario',
+            description='Rota para criar novos usuarios, escolha seu username, email e uma senha.'
             )
 def create_user(
-    user:UserSchema, service:services
+    user:UserSchema, 
+    service:services
 ):
     try:
         return service.create_user(user)

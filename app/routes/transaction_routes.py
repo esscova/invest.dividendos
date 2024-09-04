@@ -24,8 +24,8 @@ ServiceTransaction = Annotated[TransactionService, Depends(get_transaction_servi
     "/",
     response_model=BaseTransaction,
     status_code=HTTPStatus.CREATED,
-    summary="Registro de transações",
-    description="Esta rota registra as movimentações de compra e venda de ativos.",
+    summary="Cadastrar transações de compra ou venda",
+    description="Esta rota cadastra as movimentações de compra e venda de ativos.",
 )
 def create_transaction(
     transaction: BaseTransaction,
@@ -65,7 +65,9 @@ def get_transactions(
 @router.get(
     "/{ticker}", 
     status_code=HTTPStatus.OK, 
-    response_model=List[ResponseTransaction]
+    response_model=List[ResponseTransaction],
+    summary='Lista de transações por ticker',
+    description='Esta rota retorna todas as transações de um ativo específico, utilize o ticker para buscar. Ex.: "PETR4"'
 )
 def get_transaction(
     ticker: str,
@@ -90,10 +92,15 @@ def get_transaction(
         )
 
 
-@router.put("/{transaction_id}", response_model=ResponseTransaction)
+@router.put(
+        "/{transaction_id}",
+        response_model=ResponseTransaction,
+        summary='Atualizar dados de transações',
+        description='Esta rota permite que um usuário logado edite campos de um registro de transações.'
+        )
 def update_transaction(
     transaction_id: int,
-    transaction: Transaction,
+    transaction: BaseTransaction,
     user: CurrentUser,
     service:ServiceTransaction
 ):
@@ -115,7 +122,11 @@ def update_transaction(
         )
 
 
-@router.delete("/{transaction_id}")
+@router.delete(
+        "/{transaction_id}",
+        summary='Excluir transação',
+        description='Esta rota exclui registros de transações do banco de dados.'
+        )
 def delete_transaction(
     transaction_id: int,
     user: CurrentUser,

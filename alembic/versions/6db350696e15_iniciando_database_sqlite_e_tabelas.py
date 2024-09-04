@@ -1,8 +1,8 @@
 """iniciando database sqlite e tabelas
 
-Revision ID: ee7d2ac62ab6
+Revision ID: 6db350696e15
 Revises: 
-Create Date: 2024-09-03 21:44:24.024261
+Create Date: 2024-09-03 22:28:13.507011
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'ee7d2ac62ab6'
+revision: str = '6db350696e15'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -34,11 +34,11 @@ def upgrade() -> None:
     op.create_table('transactions',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
-    sa.Column('ativo', sa.String(length=50), nullable=False),
+    sa.Column('data', sa.Date(), nullable=False),
+    sa.Column('ticker', sa.String(length=50), nullable=False),
     sa.Column('quantidade', sa.Integer(), nullable=False),
-    sa.Column('preco', sa.Numeric(precision=10, scale=2), nullable=False),
+    sa.Column('preco_unitario', sa.Numeric(precision=10, scale=2), nullable=False),
     sa.Column('tipo', sa.Enum('BUY', 'SELL', name='transactiontype'), nullable=False),
-    sa.Column('data', sa.DateTime(), nullable=False),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
     sa.Column('updated_at', sa.DateTime(), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
