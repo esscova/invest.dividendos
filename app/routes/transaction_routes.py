@@ -2,13 +2,11 @@ from http import HTTPStatus
 from typing import List, Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from sqlalchemy import select
 
-from core.deps import get_session, get_transaction_service
+from core.deps import get_transaction_service
 from core.auth import get_current_user
 from db.schemas import BaseTransaction, ResponseTransaction
-from db.models import User, Transaction
+from db.models import User
 from services.transactions_services import TransactionService
 # ...
 
