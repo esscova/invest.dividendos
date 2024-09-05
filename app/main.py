@@ -1,5 +1,5 @@
-from fastapi import FastAPI
-
+from fastapi import FastAPI, Request
+from fastapi.templating import Jinja2Templates
 
 from routes.auth_routes import router as auth_router
 from routes.dividends_routes import router as dividends_router
@@ -9,13 +9,17 @@ from routes.portfolio_routes import router as portfolio_router
 #...
 
 app = FastAPI(title='Invest.dividendos',version="0.0.1", openapi_url='/invest.dividendos')
-
+templates = Jinja2Templates(directory='app/templates')
 #...
 
 
 @app.get('/')
-def home():
-    return{'ping':'pong'}
+def home(request:Request):
+    context = {
+        'request':request,
+        'contexto':'Pong'
+    }
+    return templates.TemplateResponse('index.html', context=context)
 
 
 app.include_router(auth_router)
