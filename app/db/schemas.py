@@ -69,3 +69,15 @@ class ResponseTransaction(BaseTransaction):
 class PortfolioSchema(BaseModel):
     ticker:str
     quantidade:int
+
+from typing import List
+class Transaction(BaseModel):
+    data:date    
+    tipo:TransactionType
+    ticker:str 
+    quantidade:int 
+    preco_unitario:float
+    model_config = ConfigDict(from_attributes=True)
+    
+class TransactionResponse(BaseModel):
+    data:List[Transaction]
